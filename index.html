@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Delivery Calc">
+  <link rel="apple-touch-icon" href="file:///Users/daviddana/Downloads/apple-touch-icon.png">
+  <title>Delivery Fee Calculator</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      height: 100%;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      width: 400px;
+      margin: 20px auto;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .tabs {
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-button {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background-color: #ddd;
+      font-weight: bold;
+    }
+
+    .tab-button.active {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    #result, #mileResult {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    td input {
+      width: 60px;
+    }
+
+    .search-bar {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-height: 700px) {
+      body {
+        overflow-y: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('calculate')">Calculator</button>
+      <button class="tab-button" onclick="switchTab('addZip')">Add ZIP</button>
+      <button class="tab-button" onclick="switchTab('byMile')">By Mile</button>
+    </div>
+
+    <div id="calculate" class="tab-content active">
+      <h2>Delivery Fee Calculator</h2>
+      <input type="text" id="zipcode" placeholder="Enter ZIP Code">
+      <button onclick="calculateFee()">Calculate Fee</button>
+      <p id="result"></p>
+    </div>
+
+    <div id="addZip" class="tab-content">
+      <h2>Add New ZIP Code &amp; Fee</h2>
+      <input type="text" id="newZip" placeholder="New ZIP Code">
+      <input type="number" id="newFee" placeholder="Fee Amount">
+      <button onclick="addZipCode()">Submit ZIP &amp; Fee</button>
+
+      <input type="text" id="searchZip" class="search-bar" placeholder="Search ZIP..." oninput="renderZipTable()">
+      <button onclick="exportToCSV()">Export CSV</button>
+      <input type="file" id="csvFileInput" accept=".csv" onchange="importFromCSV(event)">
+
+      <table id="zipTable">
+        <thead>
+          <tr><th>ZIP Code</th><th>Fee ($)</th><th>Edit</th></tr>
+        </thead>
+        <tbody><tr>
+            <td>33030</td>
+            <td><input type="number" value="30" onchange="updateFee('33030', this.value)"></td>
+            <td><button onclick="removeZip('33030')">🗑️</button></td>
+          </tr><tr>
+            <td>33037</td>
+            <td><input type="number" value="35" onchange="updateFee('33037', this.value)"></td>
+            <td><button onclick="removeZip('33037')">🗑️</button></td>
+          </tr><tr>
+            <td>33101</td>
+            <td><input type="number" value="20" onchange="updateFee('33101', this.value)"></td>
+            <td><button onclick="removeZip('33101')">🗑️</button></td>
+          </tr><tr>
+            <td>33133</td>
+            <td><input type="number" value="25" onchange="updateFee('33133', this.value)"></td>
+            <td><button onclick="removeZip('33133')">🗑️</button></td>
+          </tr><tr>
+            <td>33176</td>
+            <td><input type="number" value="22" onchange="updateFee('33176', this.value)"></td>
+            <td><button onclick="removeZip('33176')">🗑️</button></td>
+          </tr></tbody>
+      </table>
+    </div>
+
+    <div id="byMile" class="tab-content">
+      <h2>Calculate Fee by Distance</h2>
+      <input type="number" id="miles" placeholder="Enter Miles">
+      <input type="number" id="rate" placeholder="Rate per Mile">
+      <button onclick="calculateMileFee()">Calculate</button>
+      <p id="mileResult"></p>
+    </div>
+  </div>
+
+  <script>
+    let deliveryFees = JSON.parse(localStorage.getItem("deliveryFees")) || {
+      "33101": 20,
+      "33133": 25,
+      "33030": 30,
+      "33037": 35,
+      "33176": 22
+    };
+
+    function saveFees() {
+      localStorage.setItem("deliveryFees", JSON.stringify(deliveryFees));
+    }
+
+    function renderZipTable() {
+      const search = document.getElementById("searchZip").value.toLowerCase();
+      const tbody = document.querySelector("#zipTable tbody");
+      tbody.innerHTML = '';
+      for (const [zip, fee] of Object.entries(deliveryFees)) {
+        if (zip.includes(search)) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${zip}</td>
+            <td><input type="number" value="${fee}" onchange="updateFee('${zip}', this.value)"></td>
+            <td><button onclick="removeZip('${zip}')">🗑️</button></td>
+          `;
+          tbody.appendChild(row);
+        }
+      }
+    }
+
+    function updateFee(zip, newFee) {
+      const feeVal = parseFloat(newFee);
+      if (!isNaN(feeVal)) {
+        deliveryFees[zip] = feeVal;
+        saveFees();
+      }
+    }
+
+    function removeZip(zip) {
+      if (confirm(`Remove ZIP ${zip}?`)) {
+        delete deliveryFees[zip];
+        saveFees();
+        renderZipTable();
+      }
+    }
+
+    function calculateFee() {
+      const zip = document.getElementById("zipcode").value.trim();
+      const fee = deliveryFees[zip];
+      const result = document.getElementById("result");
+
+      if (fee !== undefined) {
+        result.innerText = `Delivery Fee for ZIP ${zip} is $${fee}`;
+      } else {
+        result.innerText = `Sorry, no delivery fee listed for ZIP ${zip}`;
+      }
+    }
+
+    function addZipCode() {
+      const newZip = document.getElementById("newZip").value.trim();
+      const newFee = parseFloat(document.getElementById("newFee").value);
+
+      if (newZip && !isNaN(newFee)) {
+        deliveryFees[newZip] = newFee;
+        saveFees();
+        document.getElementById("newZip").value = '';
+        document.getElementById("newFee").value = '';
+        renderZipTable();
+      } else {
+        alert("Please enter a valid ZIP code and fee amount.");
+      }
+    }
+
+    function calculateMileFee() {
+      const miles = parseFloat(document.getElementById("miles").value);
+      const rate = parseFloat(document.getElementById("rate").value);
+      const result = document.getElementById("mileResult");
+
+      if (!isNaN(miles) && !isNaN(rate)) {
+        const total = (miles * rate).toFixed(2);
+        result.innerText = `Delivery Fee for ${miles} miles is $${total}`;
+      } else {
+        result.innerText = `Please enter valid numbers for miles and rate.`;
+      }
+    }
+
+    function switchTab(tabId) {
+      const contents = document.querySelectorAll('.tab-content');
+      const buttons = document.querySelectorAll('.tab-button');
+
+      contents.forEach(content => content.classList.remove('active'));
+      buttons.forEach(button => button.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'addZip') {
+        renderZipTable();
+      }
+    }
+
+    function exportToCSV() {
+      let csv = 'ZIP,Fee\n';
+      for (const [zip, fee] of Object.entries(deliveryFees)) {
+        csv += `${zip},${fee}\n`;
+      }
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'delivery_fees.csv';
+      link.click();
+    }
+
+    function importFromCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        for (let i = 1; i < lines.length; i++) {
+          const [zip, fee] = lines[i].split(',');
+          if (zip && !isNaN(parseFloat(fee))) {
+            deliveryFees[zip.trim()] = parseFloat(fee);
+          }
+        }
+        saveFees();
+        renderZipTable();
+      };
+      reader.readAsText(file);
+    }
+
+    renderZipTable();
+  </script>
+
+
+</body></html>
